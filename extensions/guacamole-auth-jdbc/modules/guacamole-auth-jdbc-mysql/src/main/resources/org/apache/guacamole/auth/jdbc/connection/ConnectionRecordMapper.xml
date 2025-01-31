@@ -118,9 +118,10 @@
                 (
 
                     guacamole_connection_history.user_id IN (
-                        SELECT user_id
+                        SELECT guacamole_user.user_id
                         FROM guacamole_user
-                        WHERE POSITION(#{term.term,jdbcType=VARCHAR} IN username) > 0
+		    	JOIN guacamole_entity ON guacamole_user.entity_id = guacamole_entity.entity_id
+                        WHERE POSITION(#{term.term,jdbcType=VARCHAR} IN guacamole_entity.name) > 0
                     )
 
                     OR guacamole_connection_history.connection_id IN (
