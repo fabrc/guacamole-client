@@ -163,7 +163,7 @@
                     guacamole_connection_history.connection_id = #{identifier,jdbcType=VARCHAR}
                     AND
                 </if>
-                1 = 1
+                1 = 0
                 <foreach collection="terms" item="term" open="" separator="">
                         <if test="term.startDate != null and term.endDate != null">
                             AND
