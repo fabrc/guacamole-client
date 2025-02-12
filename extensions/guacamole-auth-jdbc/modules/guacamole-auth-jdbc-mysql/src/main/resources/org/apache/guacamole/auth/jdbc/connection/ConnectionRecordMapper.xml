@@ -161,9 +161,12 @@
             <where>
                 <if test="identifier != null">
                     guacamole_connection_history.connection_id = #{identifier,jdbcType=VARCHAR}
+                    AND
                 </if>
-                <foreach collection="terms" item="term" open=" AND " separator=" AND ">
+                1 = 1
+                <foreach collection="terms" item="term" open="" separator="">
                         <if test="term.startDate != null and term.endDate != null">
+                            AND
                             start_date BETWEEN #{term.startDate,jdbcType=TIMESTAMP} AND #{term.endDate,jdbcType=TIMESTAMP}
                         </if>
                 </foreach>
