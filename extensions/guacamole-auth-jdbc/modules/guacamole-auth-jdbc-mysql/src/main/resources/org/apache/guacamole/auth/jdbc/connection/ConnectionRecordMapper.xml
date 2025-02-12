@@ -92,7 +92,6 @@
 
     <!-- Search for specific connection records -->
     <select id="search" resultMap="ConnectionRecordResultMap">
-
         SELECT
             guacamole_connection_history.connection_id,
             guacamole_connection_history.connection_name,
@@ -104,40 +103,72 @@
             guacamole_connection_history.start_date,
             guacamole_connection_history.end_date
         FROM guacamole_connection_history
-        LEFT JOIN guacamole_connection ON guacamole_connection_history.connection_id = guacamole_connection.connection_id
-        LEFT JOIN guacamole_user       ON guacamole_connection_history.user_id       = guacamole_user.user_id
-
         <!-- Search terms -->
         <where>
-            
             <if test="identifier != null">
                 guacamole_connection_history.connection_id = #{identifier,jdbcType=VARCHAR}
             </if>
             
             <foreach collection="terms" item="term" open=" AND " separator=" AND ">
-                (
-
                     guacamole_connection_history.user_id IN (
                         SELECT guacamole_user.user_id
                         FROM guacamole_user
 		    	JOIN guacamole_entity ON guacamole_user.entity_id = guacamole_entity.entity_id
                         WHERE POSITION(#{term.term,jdbcType=VARCHAR} IN guacamole_entity.name) > 0
                     )
-
-                    OR guacamole_connection_history.connection_id IN (
-                        SELECT connection_id
-                        FROM guacamole_connection
-                        WHERE POSITION(#{term.term,jdbcType=VARCHAR} IN connection_name) > 0
-                    )
-
-                    <if test="term.startDate != null and term.endDate != null">
-                        OR start_date BETWEEN #{term.startDate,jdbcType=TIMESTAMP} AND #{term.endDate,jdbcType=TIMESTAMP}
-                    </if>
-
-                )
             </foreach>
-            
         </where>
+        <if test="terms != null and terms.size > 0">
+            UNION
+            SELECT
+                guacamole_connection_history.connection_id,
+                guacamole_connection_history.connection_name,
+                guacamole_connection_history.remote_host,
+                guacamole_connection_history.sharing_profile_id,
+                guacamole_connection_history.sharing_profile_name,
+                guacamole_connection_history.user_id,
+                guacamole_connection_history.username,
+                guacamole_connection_history.start_date,
+                guacamole_connection_history.end_date
+            FROM guacamole_connection_history
+            <!-- Search terms -->
+            <where>
+                <if test="identifier != null">
+                    guacamole_connection_history.connection_id = #{identifier,jdbcType=VARCHAR}
+                </if>
+                
+                <foreach collection="terms" item="term" open=" AND " separator=" AND ">
+                        guacamole_connection_history.connection_id IN (
+                            SELECT connection_id
+                            FROM guacamole_connection
+                            WHERE POSITION(#{term.term,jdbcType=VARCHAR} IN connection_name) > 0
+                        )
+                </foreach>
+            </where>
+            UNION
+            SELECT
+                guacamole_connection_history.connection_id,
+                guacamole_connection_history.connection_name,
+                guacamole_connection_history.remote_host,
+                guacamole_connection_history.sharing_profile_id,
+                guacamole_connection_history.sharing_profile_name,
+                guacamole_connection_history.user_id,
+                guacamole_connection_history.username,
+                guacamole_connection_history.start_date,
+                guacamole_connection_history.end_date
+            FROM guacamole_connection_history
+            <!-- Search terms -->
+            <where>
+                <if test="identifier != null">
+                    guacamole_connection_history.connection_id = #{identifier,jdbcType=VARCHAR}
+                </if>
+                <foreach collection="terms" item="term" open=" AND " separator=" AND ">
+                        <if test="term.startDate != null and term.endDate != null">
+                            start_date BETWEEN #{term.startDate,jdbcType=TIMESTAMP} AND #{term.endDate,jdbcType=TIMESTAMP}
+                        </if>
+                </foreach>
+            </where>
+        </if>
 
         <!-- Bind sort property enum values for sake of readability -->
         <bind name="START_DATE" value="@org.apache.guacamole.net.auth.ActivityRecordSet$SortableProperty@START_DATE"/>
@@ -146,7 +177,7 @@
         <foreach collection="sortPredicates" item="sortPredicate"
                  open="ORDER BY " separator=", ">
             <choose>
-                <when test="sortPredicate.property == START_DATE">guacamole_connection_history.start_date</when>
+                <when test="sortPredicate.property == START_DATE">start_date</when>
                 <otherwise>1</otherwise>
             </choose>
             <if test="sortPredicate.descending">DESC</if>
